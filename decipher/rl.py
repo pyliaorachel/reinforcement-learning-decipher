@@ -70,7 +70,7 @@ if __name__ == '__main__':
     logging.basicConfig(format='%(levelname)s [%(asctime)s] %(message)s', level=logging.INFO)
     args = parse_args()
 
-    env = gym.make('CartPole-v0')
+    env = gym.make('CaesarCipher-v0')
     env = env.unwrapped
     
     run(env, args)
