@@ -16,7 +16,7 @@ Actions:
 
 Rewards:
     - Write a correct character: +1
-    - Write a wrong character: -.2
+    - Write a wrong character: -.1
     - Did not write: -.05
     - Otherwise: 0
 
@@ -217,7 +217,7 @@ class DecipherEnv(Env):
             self._move_w_cursor(self._movement_idx('right'))
 
         # Earn rewards & check if done
-        reward = -1.0 if self.time >= self.time_limit else (-0.05 if not should_output else (1.0 if correct else -0.2))
+        reward = -1.0 if self.time >= self.time_limit else (-0.05 if not should_output else (1.0 if correct else -0.1))
         done = (should_output and not correct) or \
                (self.time >= self.time_limit) or \
                (self.w_cursor >= self.target_width)
@@ -267,8 +267,9 @@ class DecipherEnv(Env):
         raise NotImplemented('Subclasses must implement')
 
 class HintDecipherEnv(DecipherEnv):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, simple_hint=False, **kwargs):
         self.hint = None
+        self.simple_hint = simple_hint
 
         super().__init__(*args, **kwargs)
 
