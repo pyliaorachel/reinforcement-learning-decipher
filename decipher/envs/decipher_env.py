@@ -183,7 +183,7 @@ class DecipherEnv(Env):
         
             pred_str = self.charmap[pred]
             if should_output:
-                color = 'magenta' if pred == target[w_cursor-1] else 'red'
+                color = 'magenta' if pred_str == target[w_cursor-1] else 'red'
                 y_str += colorize(pred_str, color, highlight=True)
             elif w_cursor > 0:
                 y_str += target[w_cursor-1]
