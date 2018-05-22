@@ -102,3 +102,4 @@ ENV/
 
 # Others
 .DS_Store
+backup/
