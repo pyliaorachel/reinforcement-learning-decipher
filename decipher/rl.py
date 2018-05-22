@@ -27,7 +27,7 @@ def parse_args():
                     help='Replay memory capacity')
     parser.add_argument('--target-replace-iter', metavar='N', type=int, default=50,
                     help='Number of learning iterations before updating target Q-network')
-    parser.add_argument('--n-episode', metavar='N', type=int, default=500,
+    parser.add_argument('--n-episode', metavar='N', type=int, default=2000,
                     help='number of episodes') 
 
     return parser.parse_args()
