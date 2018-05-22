@@ -11,7 +11,9 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Reinforcement learning to decipher')
     parser.add_argument('--cipher-type', metavar='CT', type=str, default='Caesar',
                     help='Cipher type')
-    parser.add_argument('--use-hint', dest='use_hint', default=False, action='store_true', 
+    parser.add_argument('-v', metavar='V', type=int, default=0,
+                    help='Version of environment')
+    parser.add_argument('--no-hint', dest='use_hint', default=True, action='store_false',
                     help='Hint mode or not')
     parser.add_argument('--n-states', metavar='N', type=int, default=10,
                     help='number of dimension in encoded hidden state') 
@@ -40,10 +42,11 @@ def run(env, args):
 
     dqn = DQN(env.base, n_states, n_actions, env_s_shape, env_a_shape, args.use_hint, args.lr, args.gamma, args.epsilon, args.batch_size, args.memory_capacity, args.target_replace_iter)
 
-    acc_loss = 0
     for i_episode in range(args.n_episode):
         s = env.reset()
+        timestep = 0
         ep_r = 0
+        acc_loss = 0
         while True:
             env.render()
 
@@ -71,14 +74,16 @@ def run(env, args):
                 break
 
             s = next_s
+            timestep += 1
 
 if __name__ == '__main__':
     logging.basicConfig(format='%(levelname)s [%(asctime)s] %(message)s', level=logging.INFO)
     args = parse_args()
 
     cipher_type = args.cipher_type
+    version = args.v
     use_hint = args.use_hint
-    env = gym.make('{}{}Cipher-v0'.format('Hint' if use_hint else '', cipher_type))
+    env = gym.make('{}{}Cipher-v{}'.format('Hint' if use_hint else '', cipher_type, version))
     env = env.unwrapped
     
     run(env, args)
