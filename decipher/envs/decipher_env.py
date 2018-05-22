@@ -221,6 +221,7 @@ class DecipherEnv(Env):
         done = (should_output and not correct) or \
                (self.time >= self.time_limit) or \
                (self.w_cursor >= self.target_width)
+        finished = (self.w_cursor >= self.target_width) and (correct)
 
         # Update
         self._move_r_cursor(cursor_mv)
@@ -229,7 +230,7 @@ class DecipherEnv(Env):
         self.time += 1
 
         obs = self._get_obs()
-        return (obs, reward, done, {})
+        return (obs, reward, done, { 'finished': finished })
 
     def _check_levelup(self):
         """Called between episodes. Update our running record of episode rewards 

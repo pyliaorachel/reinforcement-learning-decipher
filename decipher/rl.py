@@ -35,8 +35,50 @@ def parse_args():
                     help='interal (number of episodes) for saving model')
     parser.add_argument('--output-model', metavar='F', type=str, default='model.bin',
                     help='Output model file path')
+    parser.add_argument('--input-model', metavar='F', type=str, default=None,
+                    help='Input model file path; keep training or for evaluation')
+    parser.add_argument('--eval', dest='eval', default=False, action='store_true',
+                    help='Evaluation mode')
 
     return parser.parse_args()
+
+def eval(env, args):
+    if args.input_model is None:
+        logging.error('No model provided for evaluation.')
+        return
+
+    env_a_shape = [space.n for space in env.action_space.spaces]
+    env_s_shape = [space.n for space in env.observation_space.spaces]
+    n_actions = sum(env_a_shape)
+    n_states = args.n_states
+
+    dqn = DQN(env.base, n_states, n_actions, env_s_shape, env_a_shape, args.use_hint, args.lr, args.gamma, args.epsilon, args.batch_size, args.memory_capacity, args.target_replace_iter)
+    dqn.load_state_dict(args.input_model)
+    dqn.eval()
+
+    cnt_success = 0
+    for i_episode in range(args.n_episode):
+        s = env.reset()
+        timestep = 0
+        ep_r = 0
+        acc_loss = 0
+        while True:
+            env.render()
+
+            a = dqn.choose_action(s)
+            next_s, r, done, info = env.step(a)
+            ep_r += r
+
+            finished = info['finished']
+            if done:
+                env.render()
+                logging.info('Ep: {}\tRewards: {}\tSuccess: {}'.format(i_episode, round(ep_r, 2), finished))
+                cnt_success += 1 if finished else 0
+                break
+
+            s = next_s
+            timestep += 1
+    logging.info('Success rate: {}'.format(round(cnt_success / args.n_episode, 2)))
 
 def run(env, args):
     env_a_shape = [space.n for space in env.action_space.spaces]    
@@ -87,6 +129,7 @@ def run(env, args):
 
 if __name__ == '__main__':
     logging.basicConfig(format='%(levelname)s [%(asctime)s] %(message)s', level=logging.INFO)
+    logging.basicConfig(format='%(levelname)s [%(asctime)s] %(message)s', level=logging.ERROR)
     args = parse_args()
 
     cipher_type = args.cipher_type
@@ -95,6 +138,9 @@ if __name__ == '__main__':
     env = gym.make('{}{}Cipher-v{}'.format('Hint' if use_hint else '', cipher_type, version))
     env = env.unwrapped
     
-    run(env, args)
+    if args.eval:
+        eval(env, args)
+    else:
+        run(env, args)
 
     env.close()

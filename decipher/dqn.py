@@ -76,11 +76,14 @@ class DQN(object):
         self.memory_counter = 0
         self.memory_ep_end_flags = [] # Memories of each episode is kept as one single replay memory
 
+        # Evaluation mode
+        self.eval_mode = False
+
     def choose_action(self, s):
         s = [[s]] # Unsqueeze timestep, batch_size
 
         # epsilon-greedy policy
-        if np.random.uniform() < self.epsilon: # Choose action greedily
+        if not self.eval_mode or np.random.uniform() < self.epsilon: # Choose action greedily
             actions_value = self.eval_net(s).detach()[0][0]
             action = tuple([np.argmax(subact_v) for subact_v in split_chunks(actions_value.data.numpy(), self.env_a_shape)])
         else: # Choose action randomly
@@ -151,6 +154,9 @@ class DQN(object):
         self.optimizer.step()
 
         return loss.item()
+
+    def eval(self):
+        self.eval_mode = True
 
     def save_state_dict(self, file_path):
         model = { 'eval_net': self.eval_net.state_dict(), 'target_net': self.target_net.state_dict() }
