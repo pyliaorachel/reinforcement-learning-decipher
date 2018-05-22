@@ -1,3 +1,5 @@
+import pickle
+
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
@@ -149,3 +151,14 @@ class DQN(object):
         self.optimizer.step()
 
         return loss.item()
+
+    def save_state_dict(self, file_path):
+        model = { 'eval_net': self.eval_net.state_dict(), 'target_net': self.target_net.state_dict() }
+        with open(file_path, 'wb') as fout:
+            pickle.dump(model, fout)
+
+    def load_state_dict(self, file_path):
+        with open(file_path, 'rb') as fout:
+            model = pickle.load(fout)
+        self.eval_net.load_state_dict(model['eval_net'])
+        self.target_net.load_state_dict(model['target_net'])

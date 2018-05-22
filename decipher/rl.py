@@ -30,7 +30,11 @@ def parse_args():
     parser.add_argument('--target-replace-iter', metavar='N', type=int, default=50,
                     help='Number of learning iterations before updating target Q-network')
     parser.add_argument('--n-episode', metavar='N', type=int, default=2000,
-                    help='number of episodes') 
+                    help='number of episodes')
+    parser.add_argument('--save-interval', metavar='N', type=int, default=100,
+                    help='interal (number of episodes) for saving model')
+    parser.add_argument('--output-model', metavar='F', type=str, default='model.bin',
+                    help='Output model file path')
 
     return parser.parse_args()
 
@@ -41,6 +45,8 @@ def run(env, args):
     n_states = args.n_states 
 
     dqn = DQN(env.base, n_states, n_actions, env_s_shape, env_a_shape, args.use_hint, args.lr, args.gamma, args.epsilon, args.batch_size, args.memory_capacity, args.target_replace_iter)
+    if args.input_model is not None:
+        dqn.load_state_dict(args.input_model)
 
     for i_episode in range(args.n_episode):
         s = env.reset()
@@ -75,6 +81,9 @@ def run(env, args):
 
             s = next_s
             timestep += 1
+
+        if i_episode % args.save_interval == 0:
+            dqn.save_state_dict(args.output_model)
 
 if __name__ == '__main__':
     logging.basicConfig(format='%(levelname)s [%(asctime)s] %(message)s', level=logging.INFO)
