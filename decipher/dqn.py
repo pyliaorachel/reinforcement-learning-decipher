@@ -148,4 +148,4 @@ class DQN(object):
         loss.backward()
         self.optimizer.step()
 
-        return loss.data.numpy()[0]
+        return loss.item()
