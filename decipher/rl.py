@@ -37,6 +37,8 @@ def parse_args():
                     help='Output model file path')
     parser.add_argument('--input-model', metavar='F', type=str, default=None,
                     help='Input model file path; keep training or for evaluation')
+    parser.add_argument('--log-file', metavar='F', type=str, default='log.txt',
+                    help='Log file name')
     parser.add_argument('--eval', dest='eval', default=False, action='store_true',
                     help='Evaluation mode')
 
@@ -114,11 +116,12 @@ def run(env, args):
             loss = dqn.learn()
             acc_loss += 0 if loss is None else loss
 
+            finished = info['finished']
             if done:
                 env.render()
-                logging.info('Ep: {}\tRewards: {}\tLoss: {}\tAccumulated loss: {}'.format(i_episode, round(ep_r, 2), \
-                                                                                          'None' if loss is None else round(loss, 2), \
-                                                                                          round(acc_loss, 2)))
+                logging.info('Ep: {}\tRewards: {}\tLoss: {}\tAccumulated loss: {}\tSuccess: {}'.format(i_episode, round(ep_r, 2), \
+                                                                                                       'None' if loss is None else round(loss, 2), \
+                                                                                                       round(acc_loss, 2), finished))
                 break
 
             s = next_s
@@ -128,9 +131,8 @@ def run(env, args):
             dqn.save_state_dict(args.output_model)
 
 if __name__ == '__main__':
-    logging.basicConfig(format='%(levelname)s [%(asctime)s] %(message)s', level=logging.INFO)
-    logging.basicConfig(format='%(levelname)s [%(asctime)s] %(message)s', level=logging.ERROR)
     args = parse_args()
+    logging.basicConfig(format='%(levelname)s [%(asctime)s] %(message)s', level=logging.INFO, filename=args.log_file)
 
     cipher_type = args.cipher_type
     version = args.v

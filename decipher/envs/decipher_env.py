@@ -87,6 +87,9 @@ class DecipherEnv(Env):
         # Rendering
         self.charmap = [chr(ord('A')+i) for i in range(base)]
 
+        # Other bookkeeping
+        self.finished = False # Successfully deciphered or not
+
     @classmethod
     def _movement_idx(cls, movement_name):
         return cls.MOVEMENTS.index(movement_name)
@@ -201,6 +204,7 @@ class DecipherEnv(Env):
             outfile.write('Action (prediction) :   (cursor movement: {}\n'.format(move))
             outfile.write('                         write to output: {}\n'.format(out_act))
             outfile.write('                         prediction: {})\n'.format(pred_str))
+            outfile.write('Success             :   {}\n'.format(self.finished))
         else:
             outfile.write('\n' * 5)
 
@@ -228,6 +232,7 @@ class DecipherEnv(Env):
         self.last_reward = reward
         self.episode_total_reward += reward
         self.time += 1
+        self.finished = finished
 
         obs = self._get_obs()
         return (obs, reward, done, { 'finished': finished })
@@ -255,6 +260,7 @@ class DecipherEnv(Env):
         self.w_cursor = self.CURSOR_START 
         self.episode_total_reward = 0.0
         self.time = 0
+        self.finished = False
         length = self.np_random.randint(self.length_variations) + self.min_length
         self.target = self.generate_target(length)
         self.input_data = self.input_data_from_target(self.target)
