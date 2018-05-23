@@ -31,6 +31,8 @@ def parse_args():
                     help='Number of learning iterations before updating target Q-network')
     parser.add_argument('--n-episode', metavar='N', type=int, default=2000,
                     help='number of episodes')
+    parser.add_argument('--start-episode', metavar='N', type=int, default=0,
+                    help='starting episode number (for continued training)')
     parser.add_argument('--save-interval', metavar='N', type=int, default=100,
                     help='interal (number of episodes) for saving model')
     parser.add_argument('--output-model', metavar='F', type=str, default='model.bin',
@@ -59,7 +61,7 @@ def eval(env, args):
     dqn.eval()
 
     cnt_success = 0
-    for i_episode in range(args.n_episode):
+    for i_episode in range(args.start_episode, args.start_episode + args.n_episode):
         s = env.reset()
         timestep = 0
         ep_r = 0
@@ -74,7 +76,7 @@ def eval(env, args):
             finished = info['finished']
             if done:
                 env.render()
-                logging.info('Ep: {}\tRewards: {}\tSuccess: {}'.format(i_episode, round(ep_r, 2), finished))
+                logging.info(f'Ep: {i_episode}\tRewards: {round(ep_r, 2)}\tSuccess: {finished}')
                 cnt_success += 1 if finished else 0
                 break
 
@@ -92,9 +94,9 @@ def run(env, args):
     if args.input_model is not None:
         dqn.load_state_dict(args.input_model)
 
-    for i_episode in range(args.n_episode):
+    for i_episode in range(args.start_episode, args.start_episode + args.n_episode):
         s = env.reset()
-        timestep = 0
+        timestep = 1
         ep_r = 0
         acc_loss = 0
         while True:
@@ -119,9 +121,7 @@ def run(env, args):
             finished = info['finished']
             if done:
                 env.render()
-                logging.info('Ep: {}\tRewards: {}\tLoss: {}\tAccumulated loss: {}\tSuccess: {}'.format(i_episode, round(ep_r, 2), \
-                                                                                                       'None' if loss is None else round(loss, 2), \
-                                                                                                       round(acc_loss, 2), finished))
+                logging.info(f'Ep: {i_episode}\tRewards: {round(ep_r, 2)}\tLoss: {"None" if loss is None else round(loss, 2)}\tAverage loss: {round(acc_loss/timestep, 2)}\tSuccess: {finished}')
                 break
 
             s = next_s
