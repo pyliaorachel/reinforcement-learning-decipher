@@ -68,6 +68,8 @@ class DQN(object):
         self.optimizer = torch.optim.Adam(self.eval_net.parameters(), lr=lr)
         self.loss_func = nn.MSELoss()
 
+        self.prev_states = []
+
         # Experience replay memory 
         self.memory = np.zeros((memory_capacity, len(env_s_shape) * 2 + len(env_a_shape) + 1)) # [state, action, reward, next_state]
         self.memory_counter = 0
@@ -77,7 +79,8 @@ class DQN(object):
         self.eval_mode = False
 
     def choose_action(self, s):
-        s = [[s]] # Unsqueeze timestep, batch_size
+        self.prev_states.append(s)
+        s = [self.prev_states[:]] # Unsqueeze batch_size
 
         # epsilon-greedy policy
         if not self.eval_mode or np.random.uniform() < self.epsilon: # Choose action greedily
@@ -104,6 +107,7 @@ class DQN(object):
                 old_mem = next(x[0] for x in enumerate(l) if x[1] > i) # Find first elem larger than i
                 self.memory_ep_end_flags = self.memory_ep_end_flags[old_mem:]
             self.memory_ep_end_flags.append(i)
+            self.prev_states = []
 
     def learn(self):
         # Only learn after having enough experience
