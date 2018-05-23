@@ -121,7 +121,7 @@ def run(env, args):
             finished = info['finished']
             if done:
                 env.render()
-                logging.info(f'Ep: {i_episode}\tRewards: {round(ep_r, 2)}\tLoss: {"None" if loss is None else round(loss, 2)}\tAverage loss: {round(acc_loss/timestep, 2)}\tSuccess: {finished}')
+                logging.info(f'Ep: {i_episode}\tRewards: {round(ep_r, 2)}\tLoss: {"None" if loss is None else round(loss, 2)}\tAverage loss: {round(acc_loss/timestep, 2)}\tLength: {env.target_width}\tSuccess: {finished}')
                 break
 
             s = next_s
