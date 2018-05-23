@@ -34,15 +34,12 @@ class QNet(nn.Module):
         self.n_states = n_states
         self.n_actions = n_actions
 
-        self.fc1 = nn.Linear(n_states, 50)
-        self.fc1.weight.data.normal_(0, 0.1)   # initialization
-        self.out = nn.Linear(50, n_actions)
+        self.out = nn.Linear(n_states, n_actions)
         self.out.weight.data.normal_(0, 0.1)   # initialization
 
     def forward(self, x):
         x = self.state_encoder(x)
 
-        x = self.fc1(x)
         x = F.relu(x)
         actions_value = self.out(x)
 
