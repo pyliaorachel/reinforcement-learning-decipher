@@ -147,13 +147,6 @@ class DQN(object):
                                             2, q_next.data.numpy())
         max_q_next = q_next.gather(2, Variable(torch.LongTensor(argmax_q_next)))
         q_target = b_r + self.gamma * max_q_next 
-        
-        ## Let the loss of prediciton be zero if no output action
-        no_pred_idx = np.where(argmax_q_next[:, :, 1] == 2) # Get the rows with no output action (second subaction)
-        no_pred_idx += (np.full(no_pred_idx[0].shape, 2, dtype=int),) # Actually modifying the prediction (third subaction)
-        q_eval[no_pred_idx] = 0
-        q_target[no_pred_idx] = 0
-
         loss = self.loss_func(q_eval, q_target)
 
         self.optimizer.zero_grad()
