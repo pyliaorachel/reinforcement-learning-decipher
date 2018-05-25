@@ -16,7 +16,7 @@ Actions:
 
 Rewards:
     - Write a correct character: +1
-    - Write a wrong character: -.1
+    - Write a wrong character: -.1 if not weighted punishment mode, else -err/base
     - Did not write: -.05
     - Otherwise: 0
 
@@ -32,6 +32,10 @@ can also be a no-op, i.e. no output at this step.
 In the early training rounds, input strings will be fairly short. After an
 environment has been consistently solved over some episodes, 
 the environment will increase the average length of generated strings.
+
+The rewards can be set to two modes, the normal mode in which wrong output predictions
+earns static rewards, and the weighted punishment mode in which they earn
+rewards weighted by the error between the prediction and the target.
 """
 import sys
 import math
@@ -48,7 +52,7 @@ class DecipherEnv(Env):
     CURSOR_START = 0
     MOVEMENTS = ['left', 'right']
 
-    def __init__(self, base=26, n_states=10, lr=0.01, starting_min_length=2, max_length=30, length_variations=3):
+    def __init__(self, base=26, n_states=10, lr=0.01, starting_min_length=2, max_length=30, length_variations=3, reward_mode='normal'):
         """
         base: Number of distinct characters.
         starting_min_length: Minimum input string length. Ramps up as episodes are consistently solved.
@@ -59,6 +63,7 @@ class DecipherEnv(Env):
         self.min_length = starting_min_length
         self.max_length = max_length
         self.length_variations = length_variations
+        self.reward_mode = reward_mode
 
         # Inits 
         # Number of past episodes to keep track of
@@ -217,11 +222,16 @@ class DecipherEnv(Env):
         
         # Output
         if should_output:
-            correct = (pred == self.target[self.w_cursor])
+            target = self.target[self.w_cursor]
+            correct = (pred == target)
+            err = min(min(abs(pred - target), abs(pred + self.base - target)), abs(target + self.base - pred))
             self._move_w_cursor(self._movement_idx('right'))
 
-        # Earn rewards & check if done
-        reward = -1.0 if self.time >= self.time_limit else (-0.05 if not should_output else (1.0 if correct else -0.1))
+        # Earn rewards & check if done; weighted negative rewards for incorrect predictions
+        if self.reward_mode == 'normal':
+            reward = -1.0 if self.time >= self.time_limit else (-0.05 if not should_output else (1.0 if correct else -0.1))
+        else:
+            reward = -1.0 if self.time >= self.time_limit else (-0.05 if not should_output else (1.0 if correct else -(err/self.base)))
         done = (should_output and not correct) or \
                (self.time >= self.time_limit) or \
                (self.w_cursor >= self.target_width)
