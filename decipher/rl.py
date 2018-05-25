@@ -32,6 +32,8 @@ def parse_args():
                     help='Replay memory capacity')
     parser.add_argument('--target-replace-iter', metavar='N', type=int, default=50,
                     help='Number of learning iterations before updating target Q-network')
+    parser.add_argument('--hidden-dim', metavar='N', type=int, default=None,
+                    help='Hidden layer dimension within Q-network (default=None, i.e. no hidden layer)')
     parser.add_argument('--n-episode', metavar='N', type=int, default=2000,
                     help='number of episodes')
     parser.add_argument('--start-episode', metavar='N', type=int, default=0,
@@ -64,7 +66,7 @@ def eval(env, args):
 
     env_a_shape, env_s_shape, n_actions, n_states = get_env_nn_shapes(env, args) 
 
-    dqn = DQN(env.base, n_states, n_actions, env_s_shape, env_a_shape, args.symbol_repr_method, args.lr, args.gamma, args.epsilon, args.batch_size, args.memory_capacity, args.target_replace_iter)
+    dqn = DQN(env.base, n_states, n_actions, env_s_shape, env_a_shape, args.symbol_repr_method, args.lr, args.gamma, args.epsilon, args.batch_size, args.memory_capacity, args.target_replace_iter, args.hidden_dim)
     dqn.load_state_dict(args.input_model)
     dqn.eval()
 
@@ -95,7 +97,7 @@ def eval(env, args):
 def run(env, args):
     env_a_shape, env_s_shape, n_actions, n_states = get_env_nn_shapes(env, args) 
 
-    dqn = DQN(env.base, n_states, n_actions, env_s_shape, env_a_shape, args.symbol_repr_method, args.lr, args.gamma, args.epsilon, args.batch_size, args.memory_capacity, args.target_replace_iter)
+    dqn = DQN(env.base, n_states, n_actions, env_s_shape, env_a_shape, args.symbol_repr_method, args.lr, args.gamma, args.epsilon, args.batch_size, args.memory_capacity, args.target_replace_iter, args.hidden_dim)
     if args.input_model is not None: # Load pretrained model if provided
         dqn.load_state_dict(args.input_model)
 

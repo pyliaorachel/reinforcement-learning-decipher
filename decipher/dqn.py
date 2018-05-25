@@ -27,19 +27,27 @@ class StateEncoder(nn.Module):
         return lstm_out 
 
 class QNet(nn.Module):
-    def __init__(self, base, n_states, n_actions, env_s_shape, env_a_shape, symbol_repr_method='one_hot'):
+    def __init__(self, base, n_states, n_actions, env_s_shape, env_a_shape, symbol_repr_method='one_hot', hidden_dim=None):
         super().__init__()
         self.state_encoder = StateEncoder(base, n_states, env_s_shape, symbol_repr_method=symbol_repr_method)
         
         self.n_states = n_states
         self.n_actions = n_actions
+        self.hidden_dim = hidden_dim
 
-        self.out = nn.Linear(n_states, n_actions)
+        if hidden_dim is not None:
+            self.fc1 = nn.Linear(n_states, 50)
+            self.fc1.weight.data.normal_(0, 0.1)   # initialization
+            self.out = nn.Linear(50, n_actions)
+        else:
+            self.out = nn.Linear(n_states, n_actions)
         self.out.weight.data.normal_(0, 0.1)   # initialization
 
     def forward(self, x):
         x = self.state_encoder(x)
 
+        if self.hidden_dim is not None:
+            x = self.fc1(x)
         x = F.relu(x)
         actions_value = self.out(x)
 
@@ -49,8 +57,8 @@ class QNet(nn.Module):
         return self.state_encoder(x).detach()[0].data.numpy()
 
 class DQN(object):
-    def __init__(self, base, n_states, n_actions, env_s_shape, env_a_shape, symbol_repr_method='one_hot', lr=0.01, gamma=0.9, epsilon=0.8, batch_size=32, memory_capacity=500, target_replace_iter=50):
-        self.eval_net, self.target_net = QNet(base, n_states, n_actions, env_s_shape, env_a_shape, symbol_repr_method=symbol_repr_method), QNet(base, n_states, n_actions, env_s_shape, env_a_shape, symbol_repr_method=symbol_repr_method)
+    def __init__(self, base, n_states, n_actions, env_s_shape, env_a_shape, symbol_repr_method='one_hot', lr=0.01, gamma=0.9, epsilon=0.8, batch_size=32, memory_capacity=500, target_replace_iter=50, hidden_dim=None):
+        self.eval_net, self.target_net = QNet(base, n_states, n_actions, env_s_shape, env_a_shape, symbol_repr_method=symbol_repr_method, hidden_dim=hidden_dim), QNet(base, n_states, n_actions, env_s_shape, env_a_shape, symbol_repr_method=symbol_repr_method, hidden_dim=hidden_dim)
 
         self.base = base
         self.n_states = n_states
