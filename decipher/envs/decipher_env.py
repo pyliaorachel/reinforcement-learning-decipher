@@ -127,7 +127,7 @@ class DecipherEnv(Env):
     def _set_observation_space(self):
         self.observation_space = Tuple(
             # (input)
-            [Discrete(self.base-1)]
+            [Discrete(self.base)]
         )
 
     def _get_obs(self, cursor_pos=None):
@@ -285,7 +285,7 @@ class HintDecipherEnv(DecipherEnv):
     def _set_observation_space(self):
         self.observation_space = Tuple(
             # (input, hint)
-            [Discrete(self.base-1), Discrete(self.base)] # Hint needs '_' 
+            [Discrete(self.base), Discrete(self.base+1)] # Hint needs '_' 
         )
 
     def _get_obs(self, cursor_pos=None):

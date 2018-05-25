@@ -15,7 +15,6 @@ class StateEncoder(nn.Module):
         self.one_hot_sizes = [base] if not use_hint else [base, base+1]
         self.input_dim = base if not use_hint else base * 2 + 1 # base for cipher char, (base + 1) for hint char with '_'
         self.hidden_dim = n_states
-        self.output_dim = base
 
         self.one_hot = lambda x: np.apply_along_axis(lambda a: one_hot_hstack(a, self.one_hot_sizes), 2, x)
         self.lstm = nn.LSTM(self.input_dim, self.hidden_dim, batch_first=True)
