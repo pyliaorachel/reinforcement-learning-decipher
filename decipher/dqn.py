@@ -6,29 +6,30 @@ from torch.autograd import Variable
 import torch.nn.functional as F
 import numpy as np
 
-from .utils import one_hot_hstack, split_chunks, pad_zeros, to_idx_list
+from .utils import symbol_repr_hstack, symbol_repr_total_size, split_chunks, pad_zeros, to_idx_list, choose_action_from_dist
 
 
 class StateEncoder(nn.Module):
-    def __init__(self, base, n_states, use_hint=False):
+    def __init__(self, base, n_states, env_s_shape, symbol_repr_method='one_hot'):
         super().__init__()
-        self.one_hot_sizes = [base] if not use_hint else [base, base+1]
-        self.input_dim = base if not use_hint else base * 2 + 1 # base for cipher char, (base + 1) for hint char with '_'
+        self.symbol_repr_method = symbol_repr_method
+        self.symbol_repr_sizes = env_s_shape
+        self.input_dim = symbol_repr_total_size(env_s_shape, method=symbol_repr_method)
         self.hidden_dim = n_states
 
-        self.one_hot = lambda x: np.apply_along_axis(lambda a: one_hot_hstack(a, self.one_hot_sizes), 2, x)
+        self.symbol_repr = lambda x: np.apply_along_axis(lambda a: symbol_repr_hstack(a, self.symbol_repr_sizes, method=symbol_repr_method), 2, x)
         self.lstm = nn.LSTM(self.input_dim, self.hidden_dim, batch_first=True)
 
     def forward(self, x):
-        x = Variable(torch.Tensor(self.one_hot(x)))
+        x = Variable(torch.Tensor(self.symbol_repr(x)))
         lstm_out, (h, c) = self.lstm(x)
 
         return lstm_out 
 
 class QNet(nn.Module):
-    def __init__(self, base, n_states, n_actions, use_hint=False):
+    def __init__(self, base, n_states, n_actions, env_s_shape, env_a_shape, symbol_repr_method='one_hot'):
         super().__init__()
-        self.state_encoder = StateEncoder(base, n_states, use_hint=use_hint)
+        self.state_encoder = StateEncoder(base, n_states, env_s_shape, symbol_repr_method=symbol_repr_method)
         
         self.n_states = n_states
         self.n_actions = n_actions
@@ -48,14 +49,15 @@ class QNet(nn.Module):
         return self.state_encoder(x).detach()[0].data.numpy()
 
 class DQN(object):
-    def __init__(self, base, n_states, n_actions, env_s_shape, env_a_shape, use_hint=False, lr=0.01, gamma=0.9, epsilon=0.8, batch_size=32, memory_capacity=500, target_replace_iter=50):
-        self.eval_net, self.target_net = QNet(base, n_states, n_actions, use_hint=use_hint), QNet(base, n_states, n_actions, use_hint=use_hint)
+    def __init__(self, base, n_states, n_actions, env_s_shape, env_a_shape, symbol_repr_method='one_hot', lr=0.01, gamma=0.9, epsilon=0.8, batch_size=32, memory_capacity=500, target_replace_iter=50):
+        self.eval_net, self.target_net = QNet(base, n_states, n_actions, env_s_shape, env_a_shape, symbol_repr_method=symbol_repr_method), QNet(base, n_states, n_actions, env_s_shape, env_a_shape, symbol_repr_method=symbol_repr_method)
 
         self.base = base
         self.n_states = n_states
         self.n_actions = n_actions
         self.env_s_shape = env_s_shape
         self.env_a_shape = env_a_shape # Shapes may be a discrete value or box-like
+        self.symbol_repr_method = symbol_repr_method
 
         self.lr = lr
         self.gamma = gamma
@@ -84,7 +86,7 @@ class DQN(object):
         # epsilon-greedy policy
         if not self.eval_mode or np.random.uniform() < self.epsilon: # Choose action greedily
             actions_value = self.eval_net(s).detach()[0][0]
-            action = tuple([np.argmax(subact_v) for subact_v in split_chunks(actions_value.data.numpy(), self.env_a_shape)])
+            action = choose_action_from_dist(actions_value.data.numpy(), self.env_a_shape)
         else: # Choose action randomly
             action = tuple([np.random.randint(0, a) for a in self.env_a_shape])
 
@@ -143,8 +145,7 @@ class DQN(object):
         # Update eval Q-network from loss against target Q-network
         q_eval = self.eval_net(b_s).gather(2, b_a)                              # Shape (batch, seq_len, l_actions)
         q_next = self.target_net(b_next_s).detach()                             # Detach from graph, don't backpropagate
-        argmax_q_next = np.apply_along_axis(lambda x: to_idx_list([np.argmax(subact_v) for subact_v in split_chunks(x, a_shape)], a_shape), \
-                                            2, q_next.data.numpy())
+        argmax_q_next = np.apply_along_axis(lambda x: to_idx_list(choose_action_from_dist(x, a_shape), a_shape), 2, q_next.data.numpy())
         max_q_next = q_next.gather(2, Variable(torch.LongTensor(argmax_q_next)))
         q_target = b_r + self.gamma * max_q_next 
         loss = self.loss_func(q_eval, q_target)

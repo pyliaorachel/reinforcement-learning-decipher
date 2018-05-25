@@ -5,6 +5,7 @@ import numpy as np
 import gym
 
 from .dqn import DQN
+from .utils import symbol_repr_total_size 
 
 
 def parse_args():
@@ -17,6 +18,8 @@ def parse_args():
                     help='Hint mode or not')
     parser.add_argument('--n-states', metavar='N', type=int, default=10,
                     help='number of dimension in encoded hidden state') 
+    parser.add_argument('--symbol-repr-method', metavar='M', type=str, default='one_hot',
+                    help='Symbol representation method; one of one_hot, ordinal_vec, ordinal_num') 
     parser.add_argument('--lr', metavar='LR', type=float, default=0.01,
                     help='Q-learning rate')
     parser.add_argument('--gamma', metavar='G', type=float, default=0.9,
@@ -46,17 +49,22 @@ def parse_args():
 
     return parser.parse_args()
 
-def eval(env, args):
-    if args.input_model is None:
-        logging.error('No model provided for evaluation.')
-        return
-
+def get_env_nn_shapes(env, args):
     env_a_shape = [space.n for space in env.action_space.spaces]
     env_s_shape = [space.n for space in env.observation_space.spaces]
     n_actions = sum(env_a_shape)
     n_states = args.n_states
 
-    dqn = DQN(env.base, n_states, n_actions, env_s_shape, env_a_shape, args.use_hint, args.lr, args.gamma, args.epsilon, args.batch_size, args.memory_capacity, args.target_replace_iter)
+    return env_a_shape, env_s_shape, n_actions, n_states
+
+def eval(env, args):
+    if args.input_model is None:
+        logging.error('No model provided for evaluation.')
+        return
+
+    env_a_shape, env_s_shape, n_actions, n_states = get_env_nn_shapes(env, args) 
+
+    dqn = DQN(env.base, n_states, n_actions, env_s_shape, env_a_shape, args.symbol_repr_method, args.lr, args.gamma, args.epsilon, args.batch_size, args.memory_capacity, args.target_replace_iter)
     dqn.load_state_dict(args.input_model)
     dqn.eval()
 
@@ -85,13 +93,10 @@ def eval(env, args):
     logging.info('Success rate: {}'.format(round(cnt_success / args.n_episode, 2)))
 
 def run(env, args):
-    env_a_shape = [space.n for space in env.action_space.spaces]    
-    env_s_shape = [space.n for space in env.observation_space.spaces]    
-    n_actions = sum(env_a_shape)
-    n_states = args.n_states 
+    env_a_shape, env_s_shape, n_actions, n_states = get_env_nn_shapes(env, args) 
 
-    dqn = DQN(env.base, n_states, n_actions, env_s_shape, env_a_shape, args.use_hint, args.lr, args.gamma, args.epsilon, args.batch_size, args.memory_capacity, args.target_replace_iter)
-    if args.input_model is not None:
+    dqn = DQN(env.base, n_states, n_actions, env_s_shape, env_a_shape, args.symbol_repr_method, args.lr, args.gamma, args.epsilon, args.batch_size, args.memory_capacity, args.target_replace_iter)
+    if args.input_model is not None: # Load pretrained model if provided
         dqn.load_state_dict(args.input_model)
 
     for i_episode in range(args.start_episode, args.start_episode + args.n_episode):
