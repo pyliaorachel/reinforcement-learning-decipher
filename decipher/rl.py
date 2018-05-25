@@ -11,43 +11,43 @@ from .utils import symbol_repr_total_size
 def parse_args():
     parser = argparse.ArgumentParser(description='Reinforcement learning to decipher')
     parser.add_argument('--cipher-type', metavar='CT', type=str, default='Caesar',
-                    help='Cipher type')
+                        help='Cipher type (default: Caesar)')
     parser.add_argument('-v', metavar='V', type=int, default=0,
-                    help='Version of environment')
+                        help='Version of environment (default: 0)')
     parser.add_argument('--no-hint', dest='use_hint', default=True, action='store_false',
-                    help='Hint mode or not')
+                        help='Hint mode or not (default: True)')
     parser.add_argument('--n-states', metavar='N', type=int, default=10,
-                    help='number of dimension in encoded hidden state') 
+                        help='number of dimension in encoded hidden state (default: 10)') 
     parser.add_argument('--symbol-repr-method', metavar='M', type=str, default='one_hot',
-                    help='Symbol representation method; one of one_hot, ordinal_vec, ordinal_num') 
+                        help='Symbol representation method; one of one_hot, ordinal_vec, ordinal_num (default: one_hot)')
     parser.add_argument('--lr', metavar='LR', type=float, default=0.01,
-                    help='Q-learning rate')
+                        help='Q-learning rate (default:  0.01)')
     parser.add_argument('--gamma', metavar='G', type=float, default=0.9,
-                    help='Reward discount')
+                        help='Reward discount (default: 0.9)')
     parser.add_argument('--epsilon', metavar='E', type=float, default=0.8,
-                    help='Epsilon under epsilon greedy policy (probability to act greedily)')
+                        help='Epsilon under epsilon greedy policy (probability to act greedily) (default: 0.8)')
     parser.add_argument('--batch-size', metavar='BS', type=int, default=32,
-                    help='Batch size')
+                        help='Batch size (default: 32)')
     parser.add_argument('--memory-capacity', metavar='M', type=int, default=500,
-                    help='Replay memory capacity')
+                        help='Replay memory capacity (default: 500)')
     parser.add_argument('--target-replace-iter', metavar='N', type=int, default=50,
-                    help='Number of learning iterations before updating target Q-network')
+                        help='Number of learning iterations before updating target Q-network (default: 50)')
     parser.add_argument('--hidden-dim', metavar='N', type=int, default=None,
-                    help='Hidden layer dimension within Q-network (default=None, i.e. no hidden layer)')
+                        help='Hidden layer dimension within Q-network (default: None, i.e. no hidden layer)')
     parser.add_argument('--n-episode', metavar='N', type=int, default=2000,
-                    help='number of episodes')
+                        help='number of episodes (default: 2000')
     parser.add_argument('--start-episode', metavar='N', type=int, default=0,
-                    help='starting episode number (for continued training)')
+                        help='starting episode number (for continued training) (default: 0)')
     parser.add_argument('--save-interval', metavar='N', type=int, default=100,
-                    help='interal (number of episodes) for saving model')
+                        help='interal (number of episodes) for saving model (default: 100)')
     parser.add_argument('--output-model', metavar='F', type=str, default='model.bin',
-                    help='Output model file path')
+                        help='Output model file path (default: model.bin)')
     parser.add_argument('--input-model', metavar='F', type=str, default=None,
-                    help='Input model file path; keep training or for evaluation')
+                        help='Input model file path; keep training or for evaluation (default: None)')
     parser.add_argument('--log-file', metavar='F', type=str, default='log.txt',
-                    help='Log file name')
+                        help='Log file name (default: log.txt)')
     parser.add_argument('--eval', dest='eval', default=False, action='store_true',
-                    help='Evaluation mode')
+                        help='Evaluation mode (default: False)')
 
     return parser.parse_args()
 
