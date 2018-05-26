@@ -1,5 +1,8 @@
 # Deciphering Simpler Ciphers With Reinforcement Learning
 
+__COMP3314 Machine Learning project__  
+_Author: Peiyu Liao 3035124855_  
+
 - Code references
   - Gym environment: [OpenAI Algorithmic Environment](https://github.com/openai/gym/blob/master/gym/envs/algorithmic/algorithmic_env.py)
   - DQN: [github@MorvanZhou/PyTorch-Tutorial/tutorial-contents/405\_DQN\_Reinforcement\_learning.py](https://github.com/MorvanZhou/PyTorch-Tutorial/blob/master/tutorial-contents/405_DQN_Reinforcement_learning.py)
