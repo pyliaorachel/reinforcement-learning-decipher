@@ -143,6 +143,11 @@ class DecipherEnv(Env):
 
         return [cursor_obs]
 
+    def _get_reward(self):
+        # For decipherment without hint, can use dictionary word match
+        # or other techniques to provide reward
+        raise NotImplemented('Subclasses must implement')
+
     def _get_str_obs(self, cursor_pos=None):
         """Return observation as character representations"""
         obs = self._get_obs(cursor_pos)
@@ -221,21 +226,20 @@ class DecipherEnv(Env):
         should_output = (out_act == 1)
         
         # Output
+        correct = None
+        err = None
         if should_output:
             target = self.target[self.w_cursor]
             correct = (pred == target)
             err = min(min(abs(pred - target), abs(pred + self.base - target)), abs(target + self.base - pred))
             self._move_w_cursor(self._movement_idx('right'))
 
-        # Earn rewards & check if done; weighted negative rewards for incorrect predictions
-        if self.reward_mode == 'normal':
-            reward = -1.0 if self.time >= self.time_limit else (-0.05 if not should_output else (1.0 if correct else -0.1))
-        else:
-            reward = -1.0 if self.time >= self.time_limit else (-0.05 if not should_output else (1.0 if correct else -(err/self.base)))
+        # Earn rewards & check if done; negative rewards for incorrect predictions
+        reward = self._get_reward(should_output, correct, err)
         done = (should_output and not correct) or \
                (self.time >= self.time_limit) or \
                (self.w_cursor >= self.target_width)
-        finished = (self.w_cursor >= self.target_width) and (correct)
+        finished = (self.w_cursor >= self.target_width) and (correct) # Success
 
         # Update
         self._move_r_cursor(cursor_mv)
@@ -308,6 +312,13 @@ class HintDecipherEnv(DecipherEnv):
         hint_obs = self.hint[cursor_pos]
 
         return [cursor_obs, hint_obs]
+
+    def _get_reward(self, should_output, correct, err):
+        if self.reward_mode == 'normal':
+            reward = -1.0 if self.time >= self.time_limit else (-0.05 if not should_output else (1.0 if correct else -0.1))
+        else:
+            reward = -1.0 if self.time >= self.time_limit else (-0.05 if not should_output else (1.0 if correct else -(err/self.base)))
+        return reward
 
     def hint_from_target(self):
         raise NotImplemented('Subclasses must implement')
