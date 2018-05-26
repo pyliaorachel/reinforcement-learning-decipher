@@ -16,5 +16,5 @@ output_path="output/output_${hint}${cipher}cipher_v${v}/${repr}/hd_None/g_${g}/e
 
 mkdir -p ${output_path}/game
 if [ "${hint}" = "hint" ]; then
-    python3 -u -m decipher.rl -v $v --n-episode $n --gamma $g --epsilon $e --target-replace-iter $ti --n-states $ns --output-model ${output_path}/model.bin --log-file ${output_path}/${t}.log >> ${output_path}/game/${t}.log
+    python3 -u -m decipher.rl -v $v --symbol-repr-method ${repr} --n-episode $n --gamma $g --epsilon $e --target-replace-iter $ti --n-states $ns --output-model ${output_path}/model.bin --log-file ${output_path}/${t}.log >> ${output_path}/game/${t}.log
 fi
