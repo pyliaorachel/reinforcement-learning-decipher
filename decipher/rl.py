@@ -144,7 +144,7 @@ if __name__ == '__main__':
     cipher_type = args.cipher_type
     version = args.v
     use_hint = args.use_hint
-    env = gym.make('{}{}Cipher-v{}'.format('Hint' if use_hint else '', cipher_type, version))
+    env = gym.make(f'{"Hint" if use_hint else ""}{cipher_type}Cipher-v{version}')
     env = env.unwrapped
     
     if args.eval:
