@@ -12,7 +12,7 @@ class HintAffineEnv(HintDecipherEnv, AffineEnv):
     def hint_from_target(self, target):
         hint = [self.base] * len(target)
 
-        if self.simple_hint:
+        if self.simple_hint: # Hint always at the first position
             hint[0] = target[0]
         else:
             h_idx = self.np_random.randint(len(target))

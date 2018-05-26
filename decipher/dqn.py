@@ -1,3 +1,15 @@
+"""
+Deep Q Network logics.
+
+The state is encoded with an LSTM controller over the history of observed
+inputs. The hidden state is fed to the Q-network for evaluation of each action.
+
+Two Q-networks are present, one target network, and one evaluation network.
+The evaluation network is updated frequently with random batches chosen from
+a pool of past experiences (memory), while the target network is less frequently
+updated by copying the parameters from the evaluation network directly. This
+technique helps stabilizing the learning process.
+"""
 import pickle
 
 import torch
@@ -10,25 +22,47 @@ from .utils import symbol_repr_hstack, symbol_repr_total_size, split_chunks, pad
 
 
 class StateEncoder(nn.Module):
+    """LSTM controller."""
     def __init__(self, base, n_states, env_s_shape, symbol_repr_method='one_hot'):
+        """
+        base: size of alphabet
+        n_states: dimension of the encoded state
+        env_s_shape: state shape from the environment
+        symbol_repr_method: character (symbol) representation method
+        """
         super().__init__()
         self.symbol_repr_method = symbol_repr_method
         self.symbol_repr_sizes = env_s_shape
+        # The input dimension depends on which character (symbol) representation used
         self.input_dim = symbol_repr_total_size(env_s_shape, method=symbol_repr_method)
         self.hidden_dim = n_states
 
-        self.symbol_repr = lambda x: np.apply_along_axis(lambda a: symbol_repr_hstack(a, self.symbol_repr_sizes, method=symbol_repr_method), 2, x)
+        self.symbol_repr = lambda x: np.apply_along_axis(lambda a: symbol_repr_hstack(a, self.symbol_repr_sizes, method=symbol_repr_method), 2, x) # Adapt to varying shapes of different representations
         self.lstm = nn.LSTM(self.input_dim, self.hidden_dim, batch_first=True)
 
     def forward(self, x):
+        """
+        x: a series of observations from the environment
+        """
         x = Variable(torch.Tensor(self.symbol_repr(x)))
         lstm_out, (h, c) = self.lstm(x)
 
         return lstm_out 
 
 class QNet(nn.Module):
+    """Q-network."""
     def __init__(self, base, n_states, n_actions, env_s_shape, env_a_shape, symbol_repr_method='one_hot', hidden_dim=None):
+        """
+        base: size of alphabet
+        n_states: dimension of the encoded state from LSTM
+        n_actions: number of actions (discrete values flattened out)
+        env_s_shape: state shape from the environment
+        env_a_shape: action shape from the environment
+        symbol_repr_method: character (symbol) representation method
+        hidden_dim: dimension of the hidden layer, or no hidden layer if None
+        """
         super().__init__()
+        # LSTM controller underlies Q-network
         self.state_encoder = StateEncoder(base, n_states, env_s_shape, symbol_repr_method=symbol_repr_method)
         
         self.n_states = n_states
@@ -44,6 +78,9 @@ class QNet(nn.Module):
         self.out.weight.data.normal_(0, 0.1)   # initialization
 
     def forward(self, x):
+        """
+        x: a series of observations from the environment
+        """
         x = self.state_encoder(x)
 
         if self.hidden_dim is not None:
@@ -54,10 +91,29 @@ class QNet(nn.Module):
         return actions_value
 
     def get_hidden_state(self, x):
+        """Simply retrieve the hidden state representation for the observation history.
+        x: a series of observations from the environment
+        """
         return self.state_encoder(x).detach()[0].data.numpy()
 
 class DQN(object):
+    """Deep Q Network with an evaluation and a target network."""
     def __init__(self, base, n_states, n_actions, env_s_shape, env_a_shape, symbol_repr_method='one_hot', lr=0.01, gamma=0.9, epsilon=0.8, batch_size=32, memory_capacity=500, target_replace_iter=50, hidden_dim=None):
+        """
+        base: size of alphabet
+        n_states: dimension of the encoded state for LSTM
+        n_actions: number of actions (discrete values flattened out)
+        env_s_shape: state shape from the environment
+        env_a_shape: action shape from the environment
+        symbol_repr_method: character (symbol) representation method
+        lr: learning rate of Q-learning
+        gamma: reward discount factor
+        epsilon: epsilon in epsilon-greedy policy; probability to choose an action based on the current optimal policy
+        batch_size: batch size for learning from memory
+        memory_capacity: memory storage capacity for experience replay
+        target_replace_iter: number of iterations before the target network is updated
+        hidden_dim: dimension of the hidden layer, or no hidden layer if None
+        """
         self.eval_net, self.target_net = QNet(base, n_states, n_actions, env_s_shape, env_a_shape, symbol_repr_method=symbol_repr_method, hidden_dim=hidden_dim), QNet(base, n_states, n_actions, env_s_shape, env_a_shape, symbol_repr_method=symbol_repr_method, hidden_dim=hidden_dim)
 
         self.base = base
@@ -75,7 +131,7 @@ class DQN(object):
         self.target_replace_iter = target_replace_iter
         self.learn_step_counter = 0 # For target updating
         self.optimizer = torch.optim.Adam(self.eval_net.parameters(), lr=lr)
-        self.loss_func = nn.MSELoss()
+        self.loss_func = nn.MSELoss() # Mean squared error loss
 
         self.prev_states = []
 
@@ -88,6 +144,9 @@ class DQN(object):
         self.eval_mode = False
 
     def choose_action(self, s):
+        """
+        s: observed state from the environment
+        """
         self.prev_states.append(s)
         s = [self.prev_states[:]] # Unsqueeze batch_size
 

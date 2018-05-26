@@ -1,3 +1,6 @@
+"""
+Reinforcement learning logic, using DQN as policy learner.
+"""
 import logging
 import argparse
 
@@ -9,6 +12,7 @@ from .utils import symbol_repr_total_size
 
 
 def parse_args():
+    """Parse command line arguments."""
     parser = argparse.ArgumentParser(description='Reinforcement learning to decipher')
     parser.add_argument('--cipher-type', metavar='CT', type=str, default='Caesar',
                         help='Cipher type (default: Caesar)')
@@ -52,6 +56,10 @@ def parse_args():
     return parser.parse_args()
 
 def get_env_nn_shapes(env, args):
+    """Gen action and state shapes from the environment necessary for the construction of DQN.
+    env: environment
+    args: command line arguments
+    """
     env_a_shape = [space.n for space in env.action_space.spaces]
     env_s_shape = [space.n for space in env.observation_space.spaces]
     n_actions = sum(env_a_shape)
@@ -60,6 +68,10 @@ def get_env_nn_shapes(env, args):
     return env_a_shape, env_s_shape, n_actions, n_states
 
 def eval(env, args):
+    """Evaluation mode. Chooses actions based on optimal policy.
+    env: environment
+    args: command line arguments
+    """
     if args.input_model is None:
         logging.error('No model provided for evaluation.')
         return
@@ -95,6 +107,10 @@ def eval(env, args):
     logging.info('Success rate: {}'.format(round(cnt_success / args.n_episode, 2)))
 
 def run(env, args):
+    """Run the reinforcement learning process.
+    env: environment
+    args: command line arguments
+    """
     env_a_shape, env_s_shape, n_actions, n_states = get_env_nn_shapes(env, args) 
 
     dqn = DQN(env.base, n_states, n_actions, env_s_shape, env_a_shape, args.symbol_repr_method, args.lr, args.gamma, args.epsilon, args.batch_size, args.memory_capacity, args.target_replace_iter, args.hidden_dim)
@@ -115,7 +131,7 @@ def run(env, args):
             # Take action
             next_s, r, done, info = env.step(a)
 
-            # Keep transition in memory
+            # Keep transition in memory (experience replay)
             dqn.store_transition(s, a, r, next_s, done)
 
             # Accumulate reward
@@ -134,6 +150,7 @@ def run(env, args):
             s = next_s
             timestep += 1
 
+        # Save model every several episodes
         if i_episode % args.save_interval == 0:
             dqn.save_state_dict(args.output_model)
 
@@ -146,7 +163,8 @@ if __name__ == '__main__':
     use_hint = args.use_hint
     env = gym.make(f'{"Hint" if use_hint else ""}{cipher_type}Cipher-v{version}')
     env = env.unwrapped
-    
+
+    # Evaluation mode or training mode
     if args.eval:
         eval(env, args)
     else:

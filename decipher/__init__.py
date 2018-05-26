@@ -1,3 +1,15 @@
+"""
+Register the environments for gym.
+
+The version number here is based on difficulties and rewarding schemes.
+- Version
+    - vx: static rewarding scheme
+        - v0: small alphabet and simple hint
+        - v1: small alphabet
+        - v2: simple hint
+        - v3: normal
+    - v1x: error-based rewarding scheme at difficulty level x 
+"""
 from gym.envs.registration import register
 
 register(
@@ -47,6 +59,8 @@ register(
     kwargs={ 'reward_mode': 'weighted' }
 )
 
+# Affine cipher is not our focus, so only one version provided for demonstration purpose
+# Can register more if needed
 register(
     id='HintAffineCipher-v0',
     entry_point='decipher.envs:HintAffineEnv',

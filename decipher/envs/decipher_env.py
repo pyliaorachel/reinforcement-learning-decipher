@@ -48,18 +48,20 @@ from six import StringIO
 
 
 class DecipherEnv(Env):
+    """General decipherment environment."""
     metadata = {'render.modes': ['human', 'ansi']}
     CURSOR_START = 0
     MOVEMENTS = ['left', 'right']
 
-    def __init__(self, base=26, n_states=10, lr=0.01, starting_min_length=2, max_length=30, length_variations=3, reward_mode='normal'):
+    def __init__(self, base=26, starting_min_length=2, max_length=30, length_variations=3, reward_mode='static'):
         """
-        base: Number of distinct characters.
-        starting_min_length: Minimum input string length. Ramps up as episodes are consistently solved.
+        base: size of alphabet
+        starting_min_length: minimum input string length; ramps up as episodes are consistently solved
+        max_length: maximum input string length
+        length_variations: allowed small variation amount from the current input string length
+        reward_mode: rewarding scheme
         """
         self.base = base
-        self.n_states = n_states
-        self.lr = lr
         self.min_length = starting_min_length
         self.max_length = max_length
         self.length_variations = length_variations
@@ -97,46 +99,66 @@ class DecipherEnv(Env):
 
     @classmethod
     def _movement_idx(cls, movement_name):
+        """Index representation of the movements.
+        movement_name: name of the movement
+        """
         return cls.MOVEMENTS.index(movement_name)
     
     @property
     def input_width(self):
+        """Length of input."""
         return len(self.input_data)
 
     @property
     def target_width(self):
+        """Length of target."""
         return len(self.target)
 
     @property
     def time_limit(self):
+        """Maximum timesteps allowed for each episode."""
         return self.input_width + self.target_width + 4
 
     def seed(self, seed=None):
-        """Generate a seed for random numbers"""
+        """Generate a seed for random numbers."""
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
     def _move(self, cursor, movement, limit):
+        """Move cursor.
+        cursor: position of the cursor to move
+        movement: cursor movement index
+        limit: boundary of the cursor position
+        """
         named = self.MOVEMENTS[movement]
         cursor += 1 if named == 'right' and cursor < (limit-1) else (-1 if cursor > 0 else 0)
         return cursor
 
     def _move_r_cursor(self, movement):
+        """Move read cursor.
+        movement: cursor movement index
+        """
         limit = self.input_width
         self.r_cursor = self._move(self.r_cursor, movement, limit) 
     
     def _move_w_cursor(self, movement):
+        """Move write cursor.
+        movement: cursor movement index
+        """
         limit = self.target_width + 1 # Can exceed limit, at which the episode terminates
         self.w_cursor = self._move(self.w_cursor, movement, limit) 
 
     def _set_observation_space(self):
+        """Set observation space."""
         self.observation_space = Tuple(
             # (input)
             [Discrete(self.base)]
         )
 
     def _get_obs(self, cursor_pos=None):
-        """Return observation"""
+        """Get observation under the cursor.
+        cursor_pos: position of the cursor
+        """
         if cursor_pos is None:
             cursor_pos = self.r_cursor
         cursor_obs = self.input_data[cursor_pos]
@@ -144,23 +166,29 @@ class DecipherEnv(Env):
         return [cursor_obs]
 
     def _get_reward(self):
+        """Reward methodology."""
         # For decipherment without hint, can use dictionary word match
         # or other techniques to provide reward
         raise NotImplemented('Subclasses must implement')
 
     def _get_str_obs(self, cursor_pos=None):
-        """Return observation as character representations"""
+        """Return observation as character representations.
+        cursor_pos: position of the cursor
+        """
         obs = self._get_obs(cursor_pos)
         return (''.join([self.charmap[i] for i in obs[:-1]]), obs[-1]) # Input + cursor
 
     def _get_str(self, s, pos=None):
-        """Return the ith character of / the whole string"""
+        """Return the ith character of the string, or the whole string.
+        s: string of integer representations
+        pos: position to retrieve, or the entire string if None
+        """
         if pos is not None:
             return ''.join(self.charmap[s[pos]])
         return ''.join([self.charmap[i] for i in s])
 
     def render_observation(self):
-        """Return a string representation of the input tape/grid."""
+        """Return a string representation of the input tape."""
         input_data = self._get_str(self.input_data)
 
         r_cursor = self.r_cursor
@@ -174,6 +202,9 @@ class DecipherEnv(Env):
         return x_str
 
     def render(self, mode='human'):
+        """Return a string representation of the entire environment.
+        mode: indicates the output destinate in the system
+        """
         outfile = StringIO() if mode == 'ansi' else sys.stdout
 
         # Prepare render template
@@ -221,6 +252,9 @@ class DecipherEnv(Env):
         return outfile
 
     def step(self, action):
+        """Transition to the next state & return rewards upon receiving an aciton.
+        action: action performed by the agent
+        """
         self.last_action = action
         cursor_mv, out_act, pred = action
         should_output = (out_act == 1)
@@ -267,6 +301,7 @@ class DecipherEnv(Env):
             self.reward_shortfalls = []
 
     def reset(self):
+        """Reset environment."""
         self._check_levelup()
         self.last_action = None
         self.last_reward = 0
@@ -282,13 +317,19 @@ class DecipherEnv(Env):
         return self._get_obs()
 
     def generate_target(self, size):
+        """Target generation algorithm."""
         return [self.np_random.randint(self.base) for _ in range(size)]
 
     def input_data_from_target(self, target):
+        """Encrypt the target into ciphers as inputs."""
         raise NotImplemented('Subclasses must implement')
 
 class HintDecipherEnv(DecipherEnv):
+    """Decipherment environment with hint tape."""
     def __init__(self, *args, simple_hint=False, **kwargs):
+        """
+        simple_hint: whether the hint is simple, e.g. hint always at the same position
+        """
         self.hint = None
         self.simple_hint = simple_hint
 
@@ -314,13 +355,14 @@ class HintDecipherEnv(DecipherEnv):
         return [cursor_obs, hint_obs]
 
     def _get_reward(self, should_output, correct, err):
-        if self.reward_mode == 'normal':
+        if self.reward_mode == 'static':
             reward = -1.0 if self.time >= self.time_limit else (-0.05 if not should_output else (1.0 if correct else -0.1))
-        else:
+        else: # Error-based rewarding scheme
             reward = -1.0 if self.time >= self.time_limit else (-0.05 if not should_output else (1.0 if correct else -(err/self.base)))
         return reward
 
     def hint_from_target(self):
+        """Decide hints to provide."""
         raise NotImplemented('Subclasses must implement')
 
     def render_observation(self):
