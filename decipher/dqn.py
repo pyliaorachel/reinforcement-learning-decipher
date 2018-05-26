@@ -92,7 +92,7 @@ class DQN(object):
         s = [self.prev_states[:]] # Unsqueeze batch_size
 
         # epsilon-greedy policy
-        if not self.eval_mode or np.random.uniform() < self.epsilon: # Choose action greedily
+        if self.eval_mode or np.random.uniform() < self.epsilon: # Choose action greedily
             actions_value = self.eval_net(s).detach()[0][0]
             action = choose_action_from_dist(actions_value.data.numpy(), self.env_a_shape)
         else: # Choose action randomly
@@ -101,6 +101,13 @@ class DQN(object):
         return action
 
     def store_transition(self, s, a, r, next_s, done):
+        """
+        s: observed state from the environment
+        a: chosen action
+        r: reward received for performing the action
+        next_s: next observed state from the environment
+        done: whether the episode is finished
+        """
         a_idx = to_idx_list(a, self.env_a_shape) # Turn action into indices for ease of use in learning
         transition = np.hstack((s, a_idx, [r], next_s))
 
@@ -119,6 +126,7 @@ class DQN(object):
             self.prev_states = []
 
     def learn(self):
+        """Learn from experience replay."""
         # Only learn after having enough experience
         if self.memory_counter < self.memory_capacity:
             return
@@ -165,14 +173,21 @@ class DQN(object):
         return loss.item()
 
     def eval(self):
+        """Set network to evaluation mode."""
         self.eval_mode = True
 
     def save_state_dict(self, file_path):
+        """"Save model.
+        file_path: output path to save model
+        """
         model = { 'eval_net': self.eval_net.state_dict(), 'target_net': self.target_net.state_dict() }
         with open(file_path, 'wb') as fout:
             pickle.dump(model, fout)
 
     def load_state_dict(self, file_path):
+        """"Load model.
+        file_path: input path to load model
+        """
         with open(file_path, 'rb') as fout:
             model = pickle.load(fout)
         self.eval_net.load_state_dict(model['eval_net'])
