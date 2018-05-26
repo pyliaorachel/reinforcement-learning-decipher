@@ -73,7 +73,7 @@ def eval(env, args):
     cnt_success = 0
     for i_episode in range(args.start_episode, args.start_episode + args.n_episode):
         s = env.reset()
-        timestep = 0
+        timestep = 1
         ep_r = 0
         acc_loss = 0
         while True:
