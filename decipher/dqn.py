@@ -35,10 +35,10 @@ class QNet(nn.Module):
         self.n_actions = n_actions
         self.hidden_dim = hidden_dim
 
-        if hidden_dim is not None:
-            self.fc1 = nn.Linear(n_states, 50)
+        if hidden_dim is not None: # Can opt for a hidden layer in between the encoded state and the output
+            self.fc1 = nn.Linear(n_states, hidden_dim)
             self.fc1.weight.data.normal_(0, 0.1)   # initialization
-            self.out = nn.Linear(50, n_actions)
+            self.out = nn.Linear(hidden_dim, n_actions)
         else:
             self.out = nn.Linear(n_states, n_actions)
         self.out.weight.data.normal_(0, 0.1)   # initialization
