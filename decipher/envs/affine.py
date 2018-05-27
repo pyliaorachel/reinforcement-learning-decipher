@@ -12,10 +12,12 @@ class HintAffineEnv(HintDecipherEnv, AffineEnv):
     def hint_from_target(self, target):
         hint = [self.base] * len(target)
 
-        if self.simple_hint: # Hint always at the first position
+        # At least 2 hints are needed to resolve a and b
+        if self.simple_hint: # Hint always at the first two positions
             hint[0] = target[0]
+            hint[1] = target[1]
         else:
-            h_idx = self.np_random.randint(len(target))
-            hint[h_idx] = target[h_idx]
+            h_idx = self.np_random.choice(len(target), 2, replace=False)
+            hint[h_idx[0]], hint[h_idx[1]] = target[h_idx[0]], target[h_idx[1]]
 
         return hint
