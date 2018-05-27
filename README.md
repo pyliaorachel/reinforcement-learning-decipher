@@ -9,7 +9,7 @@ _Author: Peiyu Liao 3035124855_
 - Paper
   - DQN: [Mnih, Volodymyr, et al. "Human-level control through deep reinforcement learning." Nature 518.7540 (2015): 529](https://storage.googleapis.com/deepmind-media/dqn/DQNNaturePaper.pdf)
 
-## Structure
+## Source
 
 - `decipher`: source code of the project
   - `rl.py`: reinforcement learning logic, agent interacting with the environment
@@ -18,12 +18,29 @@ _Author: Peiyu Liao 3035124855_
     - `decipher_env.py`: general decipherment logic
     - `caesar.py`, `affine.py`: cipher algorithms
   - `__init__.py`: different versions of registered environments
+  
+## Test
+  
 - `tests`: test scripts
-  - `run_one_hot.sh`: one-hot character representation, static rewarding scheme
-  - `run_ordinal_vec.sh`: ordinal vector character representation, static rewarding scheme
-  - `run_ordinal_num.sh`: ordinal number character representation, static rewarding scheme
-  - `run_one_hot_weighted_reward.sh`: one-hot character representation, error-based rewarding scheme
-  - `run_ordinal_vec_weighted_reward.sh`: ordinal vector character representation, error-based rewarding scheme
+  - `train`: train and output model; `eval`: evaluate model and output rewards
+    - `run_one_hot.sh`: one-hot character representation, static rewarding scheme
+    - `run_ordinal_vec.sh`: ordinal vector character representation, static rewarding scheme
+    - `run_ordinal_num.sh`: ordinal number character representation, static rewarding scheme
+    - `run_one_hot_weighted_reward.sh`: one-hot character representation, error-based rewarding scheme
+    - `run_ordinal_vec_weighted_reward.sh`: ordinal vector character representation, error-based rewarding scheme
+
+###### Output
+
+- Training results folder
+  - `output/output_<cipher-type>_v<version>/<character-representation>/hd_<hidden-layer>/g_<gamma>/e_<epsilon>/ti_<target-net-iteration>/ns_<dim-of-states>/<num-of-episodes>/`
+- Evaluation results folder
+  - `output/output_<cipher-type>_v<version>/<character-representation>/hd_<hidden-layer>/g_<gamma>/e_<epsilon>/ti_<target-net-iteration>/ns_<dim-of-states>/<num-of-episodes>/eval/`
+- Log results
+  - `<time>.log` under folder
+- Environment renderings
+  - `game/<time>.log` under folder
+- Model output (training only)
+  - `model.bin` under folder
 
 ## Usage
 
@@ -82,5 +99,5 @@ optional arguments:
   --eval                Evaluation mode (default: False)
   
 # Run tests
-$ ./tests/<chosen-test>.sh
+$ ./tests/<train-or-eval>/<chosen-test>.sh
 ```
